@@ -2,8 +2,9 @@
 MIN_NAME_LENGTH = 3
 run = True
 
+print("Welcome to the Username Generator!")
+
 def optionchoicer():
-    print("Welcome to the Username Generator!")
     option = input("Enter 1 to generate a username, 2 to view usernames, or 3 to exit: ")
     option = option.strip().replace(" ", "")
     try:
@@ -15,9 +16,12 @@ def optionchoicer():
         return optionchoicer()
     return option
 
-option = optionchoicer()
+
 
 while run == True:
+
+    option = optionchoicer()
+    
     if option == "1":
         # Ask the user for their first and last name
         userFirstname = input("Enter your first name: ")
@@ -51,7 +55,6 @@ while run == True:
         #Save username to a file
         with open("usernames.txt", "a") as file:
             file.write(username + "\n")
-        optionchoicer()
 
     if option == "2":
         # Ask the user if they want to see all usernames make sure it returns to the optionchoicer() function if they don't want to see the usernames
@@ -61,7 +64,6 @@ while run == True:
                 print("All usernames:")
                 for line in file:
                     print(line.strip()) 
-        optionchoicer()
 
     if option == "3":
         print("Exiting the program.")
