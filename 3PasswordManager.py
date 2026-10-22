@@ -2,6 +2,7 @@ import csv
 import secrets
 import string
 from pathlib import Path
+import time
 
 ACCOUNT_FILE = Path("account_info.csv")
 MIN_PASSWORD_LENGTH = 12
@@ -132,6 +133,7 @@ def search_accounts():
 def main():
     print("Welcome to the Password Manager!")
     while True:
+        time.sleep(1)
         print("\n1. Generate and save a password")
         print("2. View stored accounts")
         print("3. Search accounts")

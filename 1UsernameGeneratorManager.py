@@ -1,3 +1,6 @@
+import time
+
+
 USERNAME_FILE = "usernames.txt"
 MIN_NAME_LENGTH = 3
 
@@ -56,6 +59,7 @@ def search_username():
 
 def main():
     while True:
+        time.sleep(1)
         print("\n1. Create username\n2. View usernames\n3. Search usernames\n4. Exit")
         choice = input("Choose an option: ").strip()
 

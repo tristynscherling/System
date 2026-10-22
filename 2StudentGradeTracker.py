@@ -1,5 +1,6 @@
 import csv
 import math
+import time
 
 GRADE_FILE = "student_grades.txt"
 MIN_SCORE = 0
@@ -77,6 +78,7 @@ def view_records():
 
 def main():
     while True:
+        time.sleep(1)
         print("\n1. Add student grade\n2. View records\n3. Exit")
         choice = input("Choose an option: ").strip()
 
