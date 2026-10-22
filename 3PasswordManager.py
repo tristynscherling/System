@@ -1,90 +1,155 @@
-import math
-import random
+import csv
+import secrets
+import string
+from pathlib import Path
 
-# Constants
-strictness = 3
-complexity = 3
-min_length = 8
-max_length = 24
-special_enabled = True
-special_characters = "!@#$%^&*()-+"
+ACCOUNT_FILE = Path("account_info.csv")
+MIN_PASSWORD_LENGTH = 12
+MAX_PASSWORD_LENGTH = 64
+LOWERCASE = string.ascii_lowercase
+UPPERCASE = string.ascii_uppercase
+DIGITS = string.digits
+SPECIAL_CHARACTERS = "!@#$%^&*()-+"
+ALL_CHARACTERS = LOWERCASE + UPPERCASE + DIGITS + SPECIAL_CHARACTERS
 
-# Validate the password meets the strictness and complexity requirements
+
+def read_accounts():
+    if not ACCOUNT_FILE.exists():
+        return []
+
+    with ACCOUNT_FILE.open("r", newline="", encoding="utf-8") as file:
+        return list(csv.DictReader(file))
+
 
 def validate_password(password):
     return (
-        len(password) >= min_length and
-        len(password) <= max_length and
-        sum(1 for c in password if c.islower()) >= strictness and
-        sum(1 for c in password if c.isupper()) >= strictness and
-        sum(1 for c in password if c.isdigit()) >= complexity and
-    sum(1 for c in password if c in special_characters) >= complexity
-)
+        MIN_PASSWORD_LENGTH <= len(password) <= MAX_PASSWORD_LENGTH
+        and any(character in LOWERCASE for character in password)
+        and any(character in UPPERCASE for character in password)
+        and any(character in DIGITS for character in password)
+        and any(character in SPECIAL_CHARACTERS for character in password)
+    )
 
-# Generate password using random module and the constants defined above
-def generate_password():
-    # Characters to use in the password
-    characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()-+"
-    # Filler variable to hold the password
-    password = ""
-    # Generation using range and random.choice to select characters from the characters string
-    for _ in range(random.randint(min_length, max_length)):
-        password += random.choice(characters)
-    return password
-    # Make sure the password meets the strictness and complexity requirements else, generate a new password
+
+def generate_password(length):
+    password_characters = [
+        secrets.choice(LOWERCASE),
+        secrets.choice(UPPERCASE),
+        secrets.choice(DIGITS),
+        secrets.choice(SPECIAL_CHARACTERS),
+    ]
+    password_characters.extend(
+        secrets.choice(ALL_CHARACTERS) for _ in range(length - len(password_characters))
+    )
+    secrets.SystemRandom().shuffle(password_characters)
+    password = "".join(password_characters)
     if not validate_password(password):
-        return generate_password()
-    else:
-        return password
+        raise RuntimeError("Generated password did not meet the strength requirements.")
+    return password
 
 
-
-# Store; Account name, Username, and Password in a file
-
-# Check if the account_info.txt file exists and create it if it doesn't
-try:
-    with open("account_info.txt", "r") as file:
-        pass
-except FileNotFoundError:
-    with open("account_info.txt", "w") as file:
-        pass
-
-def store_account_info(account_name, username, password):
-    with open("account_info.txt", "a") as file:
-        file.write(f"{account_name},{username},{password}\n")
-
-# Search for stored accounts.
-def search_accounts(account_name=None, username=None):
-    accounts = []
-    try:
-        with open("account_info.txt", "r") as file:
-            for line in file:
-                name, user, pwd = line.strip().split(",")
-                if (account_name is None or name == account_name) and (username is None or user == username):
-                    accounts.append((name, user, pwd))
-    except FileNotFoundError:
-        pass
-    return accounts
-
-# Check for duplicate passwords in the stored accounts.
-def check_duplicate_passwords():
-    passwords = set()
-    duplicates = set()
-    try:
-        with open("account_info.txt", "r") as file:
-            for line in file:
-                _, _, pwd = line.strip().split(",")
-                if pwd in passwords:
-                    duplicates.add(pwd)
-                else:
-                    passwords.add(pwd)
-    except FileNotFoundError:
-        pass
-    return duplicates
-
-# Mask passwords when displaying them to the user. 
 def mask_password(password):
-    return '*' * len(password)
+    return "*" * len(password)
 
 
+def add_account():
+    account_name = input("Enter account name: ").strip()
+    username = input("Enter account username: ").strip()
+    if not account_name or not username:
+        print("Account name and username cannot be empty.")
+        return
 
+    length_text = input(
+        f"Password length ({MIN_PASSWORD_LENGTH}-{MAX_PASSWORD_LENGTH}): "
+    ).strip()
+    try:
+        length = int(length_text)
+    except ValueError:
+        print("Please enter a whole-number password length.")
+        return
+
+    if not MIN_PASSWORD_LENGTH <= length <= MAX_PASSWORD_LENGTH:
+        print(
+            f"Password length must be between "
+            f"{MIN_PASSWORD_LENGTH} and {MAX_PASSWORD_LENGTH}."
+        )
+        return
+
+    password = generate_password(length)
+    if any(account["password"] == password for account in read_accounts()):
+        print("A duplicate password was generated. Please try again.")
+        return
+
+    file_exists = ACCOUNT_FILE.exists()
+    with ACCOUNT_FILE.open("a", newline="", encoding="utf-8") as file:
+        writer = csv.DictWriter(
+            file, fieldnames=["account_name", "username", "password"]
+        )
+        if not file_exists or ACCOUNT_FILE.stat().st_size == 0:
+            writer.writeheader()
+        writer.writerow(
+            {
+                "account_name": account_name,
+                "username": username,
+                "password": password,
+            }
+        )
+
+    print(f"Account saved. Generated password: {password}")
+
+
+def display_accounts(accounts=None):
+    if accounts is None:
+        accounts = read_accounts()
+
+    if not accounts:
+        print("No stored accounts found.")
+        return
+
+    print("\nStored accounts:")
+    for account in accounts:
+        print(
+            f"Account: {account['account_name']}, "
+            f"Username: {account['username']}, "
+            f"Password: {mask_password(account['password'])}"
+        )
+
+
+def search_accounts():
+    query = input("Search by account name or username: ").strip().casefold()
+    matches = [
+        account
+        for account in read_accounts()
+        if query
+        and (
+            query in account["account_name"].casefold()
+            or query in account["username"].casefold()
+        )
+    ]
+    display_accounts(matches)
+
+
+def main():
+    print("Welcome to the Password Manager!")
+    while True:
+        print("\n1. Generate and save a password")
+        print("2. View stored accounts")
+        print("3. Search accounts")
+        print("4. Exit")
+        option = input("Choose an option: ").strip()
+
+        if option == "1":
+            add_account()
+        elif option == "2":
+            display_accounts()
+        elif option == "3":
+            search_accounts()
+        elif option == "4":
+            print("Exiting.")
+            break
+        else:
+            print("Invalid option. Please choose 1, 2, 3, or 4.")
+
+
+if __name__ == "__main__":
+    main()

@@ -1,53 +1,94 @@
-# Constants
-minimumscore = 0
-maximumscore = 100
-run = True
+import csv
+import math
+
+GRADE_FILE = "student_grades.txt"
+MIN_SCORE = 0
+MAX_SCORE = 100
 
 
+def get_letter_grade(score):
+    if score >= 90:
+        return "A"
+    elif score >= 80:
+        return "B"
+    elif score >= 70:
+        return "C"
+    elif score >= 60:
+        return "D"
+    return "F"
 
-while run == True:
-    # Ask the user for their Name, Id, and assignment score()
-    studentName = input("Enter student's name: ")
-    studentId = input("Enter student's ID: ")
-    assignmentScore = float(input("Enter assignment score: "))
 
-    # Assign letter grades based on the assignment score using if-elif-else statements
-    if assignmentScore >= 90:
-        letterGrade = "A"
-    elif assignmentScore >= 80:
-        letterGrade = "B"
-    elif assignmentScore >= 70:
-        letterGrade = "C"
-    elif assignmentScore >= 60:
-        letterGrade = "D"
-    else:
-        letterGrade = "F"
+def read_records():
+    try:
+        with open(GRADE_FILE, "r", newline="", encoding="utf-8") as file:
+            return list(csv.reader(file))
+    except FileNotFoundError:
+        return []
 
-    # Save the student's information to a file
-    with open("student_grades.txt", "a") as file:
-        file.write(f"{studentName},{studentId},{assignmentScore},{letterGrade}\n")
 
-    # Read student records from the file.
-    with open("student_grades.txt", "r") as file:
-        records = file.readlines()
+def add_student():
+    name = input("Enter student's name: ").strip()
+    student_id = input("Enter student's ID: ").strip()
 
-    # Display all student records.
-    print("\nAll Student Records:")
+    try:
+        score = float(input("Enter assignment score (0-100): "))
+    except ValueError:
+        print("Enter a valid number.")
+        return
+
+    if not name or not student_id:
+        print("Name and ID cannot be empty.")
+        return
+    if not math.isfinite(score) or score < MIN_SCORE or score > MAX_SCORE:
+        print("Score must be between 0 and 100.")
+        return
+
+    with open(GRADE_FILE, "a", newline="", encoding="utf-8") as file:
+        writer = csv.writer(file)
+        writer.writerow([name, student_id, score, get_letter_grade(score)])
+
+    print("Student record saved.")
+
+
+def view_records():
+    records = read_records()
+    if not records:
+        print("No student records found.")
+        return
+
+    total = 0
+    highest = MIN_SCORE
+    lowest = MAX_SCORE
+
     for record in records:
-        name, id, score, grade = record.strip().split(",")
-        print(f"Name: {name}, ID: {id}, Score: {score}, Grade: {grade}")
+        name, student_id, score_text, grade = record
+        score = float(score_text)
+        total += score
+        if score > highest:
+            highest = score
+        if score < lowest:
+            lowest = score
+        print(f"Name: {name}, ID: {student_id}, Score: {score:g}, Grade: {grade}")
 
-    # Calculate and display the average score of all students.
-    total_score = sum(float(record.strip().split(",")[2]) for record in records)
-    average_score = total_score / len(records)
-    print(f"\nAverage Score of All Students: {average_score:.2f}")
-
-    # validate grades are within an acceptable range (0-100)
-    if assignmentScore < minimumscore or assignmentScore > maximumscore:
-        print("Error: Assignment score must be between 0 and 100.")
-        continue
-
-    # Use string operations to format and display the student's information in a readable format from highest to lowest scores.
-    print(f"\nStudent Information:\nName: {studentName}\nID: {studentId}\nScore: {assignmentScore}\nGrade: {letterGrade}")
+    print(f"Class average: {total / len(records):.2f}")
+    print(f"Highest score: {highest:g}")
+    print(f"Lowest score: {lowest:g}")
 
 
+def main():
+    while True:
+        print("\n1. Add student grade\n2. View records\n3. Exit")
+        choice = input("Choose an option: ").strip()
+
+        if choice == "1":
+            add_student()
+        elif choice == "2":
+            view_records()
+        elif choice == "3":
+            break
+        else:
+            print("Invalid option.")
+
+
+if __name__ == "__main__":
+    main()

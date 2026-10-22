@@ -1,71 +1,75 @@
-# Constants for limits
+USERNAME_FILE = "usernames.txt"
 MIN_NAME_LENGTH = 3
-run = True
 
-print("Welcome to the Username Generator!")
 
-def optionchoicer():
-    option = input("Enter 1 to generate a username, 2 to view usernames, or 3 to exit: ")
-    option = option.strip().replace(" ", "")
+def read_usernames():
     try:
-        if option not in ["1", "2", "3"]:
-            print("Invalid option. Please try again.")
-            return optionchoicer()
-    except ValueError:
-        print("Invalid input. Please enter a number.")
-        return optionchoicer()
-    return option
+        with open(USERNAME_FILE, "r", encoding="utf-8") as file:
+            return file.read().splitlines()
+    except FileNotFoundError:
+        return []
 
 
+def add_username():
+    first_name = input("Enter first name: ").strip().replace(" ", "")
+    last_name = input("Enter last name: ").strip().replace(" ", "")
 
-while run == True:
+    if len(first_name) < MIN_NAME_LENGTH or len(last_name) < MIN_NAME_LENGTH:
+        print(f"First and last names must be at least {MIN_NAME_LENGTH} characters.")
+        return
 
-    option = optionchoicer()
-    
-    if option == "1":
-        # Ask the user for their first and last name
-        userFirstname = input("Enter your first name: ")
-        userLastname = input("Enter your last name: ")
-        # Generate the username by concatenating the first letter of the first name with the last name
-        # and strip it of any whitespace and convert it to lowercase
-        userFirstname = userFirstname.strip()
-        userLastname = userLastname.strip()
-        userFirstname = userFirstname.replace(" ", "")
-        userLastname = userLastname.replace(" ", "")
-        username = userFirstname[0].lower() + userLastname.lower()
-        print("Your username is:", username)
-        # Validate that names meet a minimum length requirement
-        if len(userFirstname) < MIN_NAME_LENGTH or len(userLastname) < MIN_NAME_LENGTH:
-            print("Error: First and last names must be at least 3 characters long.")
-            continue
-        # Make sure that the usernames.txt file exists and create it if it doesn't
-        try:
-            with open("usernames.txt", "r") as file:
-                pass
-        except FileNotFoundError:
-            with open("usernames.txt", "w") as file:
-                pass
+    username = (first_name[0] + last_name).lower()
+    usernames = read_usernames()
 
-        # Make sure the username is unique by checking against a list of existing usernames
-        with open("usernames.txt", "r") as file:
-            existing_usernames = file.read().splitlines()
-        if username in existing_usernames:
-            print("Error: Username already exists.")
-            continue
-        #Save username to a file
-        with open("usernames.txt", "a") as file:
-            file.write(username + "\n")
+    if username in usernames:
+        print("That username already exists.")
+        return
 
-    if option == "2":
-        # Ask the user if they want to see all usernames make sure it returns to the optionchoicer() function if they don't want to see the usernames
-        view_usernames = input("Do you want to see all usernames? (y/n): ")
-        if view_usernames == "y":
-            with open("usernames.txt", "r") as file:
-                print("All usernames:")
-                for line in file:
-                    print(line.strip()) 
+    with open(USERNAME_FILE, "a", encoding="utf-8") as file:
+        file.write(username + "\n")
+    print("Saved username:", username)
 
-    if option == "3":
-        print("Exiting the program.")
-        run = False
-        
+
+def view_usernames():
+    usernames = read_usernames()
+    if not usernames:
+        print("No usernames found.")
+        return
+
+    for username in usernames:
+        print(username)
+
+
+def search_username():
+    search = input("Enter a username to search for: ").strip().lower()
+    usernames = read_usernames()
+    found = False
+
+    for username in usernames:
+        if search and search in username.lower():
+            print(username)
+            found = True
+
+    if not found:
+        print("Username not found.")
+
+
+def main():
+    while True:
+        print("\n1. Create username\n2. View usernames\n3. Search usernames\n4. Exit")
+        choice = input("Choose an option: ").strip()
+
+        if choice == "1":
+            add_username()
+        elif choice == "2":
+            view_usernames()
+        elif choice == "3":
+            search_username()
+        elif choice == "4":
+            break
+        else:
+            print("Invalid option.")
+
+
+if __name__ == "__main__":
+    main()
